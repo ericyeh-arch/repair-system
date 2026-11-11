@@ -336,7 +336,7 @@ async function init() {
   document.querySelector("#loginForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     const v = Object.fromEntries(new FormData(event.currentTarget).entries());
-    const { error } = await db.auth.signInWithPassword({ email: v.email, password: v.password });
+    const { error } = await db.auth.signInWithPassword({ email: v.email.trim().toLowerCase(), password: v.password });
     if (error) return fail(error, "登入失敗");
     event.currentTarget.reset();
   });
