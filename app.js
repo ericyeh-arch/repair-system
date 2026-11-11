@@ -103,6 +103,7 @@ async function loadAdminRows() {
     .from("repair_requests")
     .select("*, departments(name), issue_types(name), buildings(name), repair_statuses(code,label)")
     .order("submitted_at", { ascending: false });
+  if (!state.session) return; // 查詢期間已登出，不要把個資渲染出來
   if (error) return fail(error, "載入後台案件失敗");
   state.adminRows = data;
   renderAdminStats();
@@ -250,19 +251,39 @@ async function isStaff(session) {
   return !!data;
 }
 
-async function applySession(session) {
-  const staff = await isStaff(session);
-  state.session = staff ? session : null;
+let sessionSeq = 0;
+
+function showAdmin(staff) {
   document.querySelector("#loginForm").hidden = staff;
   document.querySelector("#adminPanel").hidden = !staff;
   document.querySelector("#adminCards").hidden = !staff;
   document.querySelector("#logoutButton").hidden = !staff;
+}
+
+async function applySession(session) {
+  // 只採用最新一次的結果，避免較早開始的查詢在登出後又把後台畫面顯示出來
+  const seq = ++sessionSeq;
+  const staff = await isStaff(session);
+  if (seq !== sessionSeq) return;
+  state.session = staff ? session : null;
+  showAdmin(staff);
   if (session && !staff) {
     showToast("此帳號不是維修人員");
-    await db.auth.signOut();
+    await db.auth.signOut({ scope: "local" });
+    return;
   }
   if (staff) await loadAdminRows();
   else state.adminRows = [];
+}
+
+async function logout() {
+  sessionSeq += 1; // 讓進行中的登入處理失效
+  state.session = null;
+  state.adminRows = [];
+  showAdmin(false);
+  const { error } = await db.auth.signOut({ scope: "local" });
+  if (error) console.error("登出錯誤", error);
+  showToast("已登出");
 }
 
 // ---------- 初始化 ----------
@@ -320,7 +341,7 @@ async function init() {
     event.currentTarget.reset();
   });
 
-  document.querySelector("#logoutButton").addEventListener("click", () => db.auth.signOut());
+  document.querySelector("#logoutButton").addEventListener("click", logout);
 
   document.querySelector("#adminCards").addEventListener("click", async (event) => {
     if (!event.target.classList.contains("save-admin")) return;
