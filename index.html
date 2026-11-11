@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>線上電腦及網路報修系統</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" role="img">
+          <rect x="7" y="10" width="34" height="22" rx="3"></rect>
+          <path d="M17 39h14M21 32v7M27 32v7"></path>
+          <path d="M15 20h8M15 25h15"></path>
+          <circle cx="34" cy="20" r="2"></circle>
+        </svg>
+      </div>
+      <div>
+        <h1>線上電腦及網路報修系統</h1>
+        <p>設定、檢修與處理進度管理</p>
+      </div>
+    </div>
+    <nav class="top-nav" aria-label="主功能">
+      <button class="nav-button active" data-view="requestView" type="button">線上報修</button>
+      <button class="nav-button" data-view="statusView" type="button">進度查詢</button>
+      <button class="nav-button" data-view="adminView" type="button">處理後台</button>
+      <button class="nav-button" data-view="schemaView" type="button">資料庫欄位</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="notice-band">
+      <div>
+        <strong>報修後請主動聯絡駐點安排維修日期與時間。</strong>
+        <span>資訊中心王永彰：分機 1427、手機 0937065417、LINE ID：ismc9853。上班日 08:30-17:00。</span>
+      </div>
+      <div class="notice-actions">
+        <a href="tel:0937065417">撥打手機</a>
+        <a href="tel:0906675016">駐點專線</a>
+      </div>
+    </section>
+
+    <section id="requestView" class="view active">
+      <div class="section-head">
+        <div>
+          <h2>線上報修</h2>
+          <p>紅色星號為必填。送出後會產生報修編號，並顯示於進度查詢。</p>
+        </div>
+        <div class="metric-card">
+          <span>今日待處理</span>
+          <strong id="todayOpenCount">0</strong>
+        </div>
+      </div>
+
+      <form id="repairForm" class="form-grid">
+        <label>
+          <span>電子郵件地址 <b>*</b></span>
+          <input name="requester_email" type="email" autocomplete="email" required placeholder="name@ntsu.edu.tw">
+        </label>
+
+        <label>
+          <span>單位名稱 <b>*</b></span>
+          <select name="department_id" required></select>
+        </label>
+
+        <label>
+          <span>申請人姓名 <b>*</b></span>
+          <input name="requester_name" type="text" autocomplete="name" required>
+        </label>
+
+        <label>
+          <span>LINE ID / 分機 / 手機 <b>*</b></span>
+          <input name="line_id" type="text" required>
+        </label>
+
+        <label>
+          <span>希望維修日期 <b>*</b></span>
+          <input name="preferred_repair_date" type="date" required>
+        </label>
+
+        <label>
+          <span>問題類型 <b>*</b></span>
+          <select name="issue_type_id" required></select>
+        </label>
+
+        <label>
+          <span>維修大樓 <b>*</b></span>
+          <select name="building_id" required></select>
+        </label>
+
+        <label>
+          <span>維修位置 <b>*</b></span>
+          <input name="repair_location" type="text" required placeholder="例如：學生宿舍 F3121、房間編號">
+        </label>
+
+        <label class="full">
+          <span>問題描述 <b>*</b></span>
+          <textarea name="issue_description" rows="5" required placeholder="請詳細說明問題點、錯誤訊息、設備名稱或已嘗試的排除方式"></textarea>
+        </label>
+
+        <div class="form-actions full">
+          <button class="primary" type="submit">送出報修</button>
+          <button class="secondary" type="reset">清除</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="statusView" class="view">
+      <div class="section-head">
+        <div>
+          <h2>維修進度公開</h2>
+          <p>公開頁只顯示處理所需資訊，不顯示 Email、姓名、LINE ID 與內部備註。</p>
+        </div>
+        <div class="filters">
+          <input id="statusSearch" type="search" placeholder="搜尋位置、問題、狀態">
+          <select id="statusFilter">
+            <option value="">全部狀態</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>編號</th>
+              <th>報修時間</th>
+              <th>單位</th>
+              <th>類型</th>
+              <th>大樓 / 位置</th>
+              <th>處理說明</th>
+              <th>狀態</th>
+            </tr>
+          </thead>
+          <tbody id="publicRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="adminView" class="view">
+      <div class="section-head">
+        <div>
+          <h2>處理後台</h2>
+          <p>依照 `repair_requests` 主表欄位更新公開處理說明、維修人員與狀態。</p>
+        </div>
+        <button id="logoutButton" class="secondary" type="button" hidden>登出</button>
+      </div>
+      <form id="loginForm" class="form-grid">
+        <label>
+          <span>維修人員 Email</span>
+          <input name="email" type="email" autocomplete="username" required>
+        </label>
+        <label>
+          <span>密碼</span>
+          <input name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <div class="form-actions full">
+          <button class="primary" type="submit">登入</button>
+        </div>
+      </form>
+      <section id="adminPanel" class="admin-stats" aria-label="後台統計" hidden>
+        <div class="stats-grid" id="adminStats"></div>
+        <div class="stats-panels">
+          <article class="stats-panel">
+            <h3>狀態分布</h3>
+            <div id="statusStats" class="bar-list"></div>
+          </article>
+          <article class="stats-panel">
+            <h3>問題類型 Top 5</h3>
+            <div id="issueStats" class="bar-list"></div>
+          </article>
+          <article class="stats-panel">
+            <h3>維修大樓 Top 5</h3>
+            <div id="buildingStats" class="bar-list"></div>
+          </article>
+        </div>
+      </section>
+      <div id="adminCards" class="admin-list" hidden></div>
+    </section>
+
+    <section id="schemaView" class="view">
+      <div class="section-head">
+        <div>
+          <h2>資料庫欄位</h2>
+          <p>依附件 `repair_schema_supabase.sql` 與 Word 表單欄位整理。</p>
+        </div>
+      </div>
+      <div class="schema-grid" id="schemaGrid"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="supabase-config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
