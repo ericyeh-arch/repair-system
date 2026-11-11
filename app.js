@@ -1,20 +1,3 @@
-const schemaFields = [
-  ["submitted_at", "TIMESTAMPTZ", "表單送出時間", "公開"],
-  ["requester_email", "TEXT", "申請人 Email", "不公開"],
-  ["department_id", "BIGINT", "單位代碼", "公開名稱"],
-  ["requester_name", "TEXT", "申請人姓名", "不公開"],
-  ["line_id", "TEXT", "LINE ID、分機或手機", "不公開"],
-  ["preferred_repair_date", "DATE", "希望維修日期", "公開"],
-  ["issue_type_id", "BIGINT", "問題類型代碼", "公開名稱"],
-  ["building_id", "BIGINT", "維修大樓代碼", "公開名稱"],
-  ["repair_location", "TEXT", "詳細位置", "公開需檢查"],
-  ["issue_description", "TEXT", "問題描述", "公開需檢查"],
-  ["public_response", "TEXT", "處理說明", "公開"],
-  ["assignee_name", "TEXT", "維修人員", "公開"],
-  ["status_id", "BIGINT", "處理狀態", "公開名稱"],
-  ["private_note", "TEXT", "內部備註", "不公開"]
-];
-
 const db = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
 const state = {
@@ -131,13 +114,13 @@ function renderPublicRows() {
   const tbody = document.querySelector("#publicRows");
   tbody.innerHTML = state.publicRows.map((item) => `
     <tr>
-      <td>R-${escapeHtml(item.id)}</td>
-      <td>${escapeHtml(formatDateTime(item.submitted_at))}</td>
-      <td>${escapeHtml(item.department_name)}</td>
-      <td>${escapeHtml(item.issue_type_name)}</td>
-      <td><strong>${escapeHtml(item.building_name)}</strong><br>${escapeHtml(item.repair_location)}</td>
-      <td>${escapeHtml(item.public_response || "尚未填寫處理說明")}</td>
-      <td><span class="status-pill ${statusClassByCode(statusCodeByLabel(item.status_label))}">${escapeHtml(item.status_label || "瞭解問題")}</span></td>
+      <td data-label="編號">R-${escapeHtml(item.id)}</td>
+      <td data-label="報修時間">${escapeHtml(formatDateTime(item.submitted_at))}</td>
+      <td data-label="單位">${escapeHtml(item.department_name)}</td>
+      <td data-label="類型">${escapeHtml(item.issue_type_name)}</td>
+      <td data-label="大樓 / 位置"><strong>${escapeHtml(item.building_name)}</strong><br>${escapeHtml(item.repair_location)}</td>
+      <td data-label="處理說明">${escapeHtml(item.public_response || "尚未填寫處理說明")}</td>
+      <td data-label="狀態"><span class="status-pill ${statusClassByCode(statusCodeByLabel(item.status_label))}">${escapeHtml(item.status_label || "瞭解問題")}</span></td>
     </tr>
   `).join("") || '<tr><td colspan="7">目前沒有符合條件的報修資料。</td></tr>';
 }
@@ -251,19 +234,6 @@ function renderAdminStats() {
   renderBarList("#buildingStats", topEntries(countBy(rows, (r) => r.buildings?.name)), total);
 }
 
-function renderSchema() {
-  document.querySelector("#schemaGrid").innerHTML = schemaFields.map(([field, type, note, visibility]) => `
-    <article class="schema-card">
-      <h3>${escapeHtml(field)}</h3>
-      <dl>
-        <dt>型別</dt><dd>${escapeHtml(type)}</dd>
-        <dt>說明</dt><dd>${escapeHtml(note)}</dd>
-        <dt>公開性</dt><dd>${escapeHtml(visibility)}</dd>
-      </dl>
-    </article>
-  `).join("");
-}
-
 async function updateMetrics() {
   const { count, error } = await db
     .from("v_public_repair_requests")
@@ -297,7 +267,6 @@ async function applySession(session) {
 
 // ---------- 初始化 ----------
 async function init() {
-  renderSchema();
   document.querySelector('[name="preferred_repair_date"]').value = today();
 
   document.querySelectorAll(".nav-button").forEach((button) => {
